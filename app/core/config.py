@@ -17,7 +17,7 @@ class PostgresConfig(BaseModel):
 
     pool_size: int = 50
     max_overflow: int = 10
-    echo: bool = True
+    echo: bool = False
 
     naming_convention: dict[str, str] = {
         "ix": "ix_%(column_0_label)s",
@@ -37,6 +37,14 @@ class PostgresConfig(BaseModel):
             port=self.port,
             path=self.db,
         )
+
+
+class RedisConfig(BaseModel):
+
+    host: str
+    port: int
+    db: int
+    max_connections: int = 10
 
 
 class Settings(BaseSettings):
@@ -65,6 +73,7 @@ class Settings(BaseSettings):
         ]
 
     postgres: PostgresConfig
+    redis: RedisConfig
 
 
 settings = Settings()  # type: ignore
