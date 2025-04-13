@@ -8,9 +8,11 @@ from app.database import crud
 from app.database.db import db_helper
 from app.models.user import User
 from app.schemas.user import UserCreate, UserPublic
+from app.database.redis_db import redis_helper
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
+    from redis.asyncio import Redis
 
 
 logger = logging.getLogger(__name__)
@@ -20,6 +22,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 SessionDep = Annotated["AsyncSession", Depends(db_helper.get_session)]
+RedisDep = Annotated["Redis", Depends(redis_helper.get_client)]
 
 
 @router.post("/register", response_model=UserPublic)
@@ -34,3 +37,9 @@ async def create_user(session: SessionDep, user_in: UserCreate) -> User:
     user = await crud.create_user(session=session, user_create=user_in)
     logger.info("User successfully registered: %s" % user.email)
     return user
+
+
+@router.post("/redis")
+async def test(redis: RedisDep, key: str, value: str):
+    await redis.set(name=key, value=value)
+    print(await redis.get(key))
