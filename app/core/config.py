@@ -47,14 +47,15 @@ class Settings(BaseSettings):
         case_sensitive=False,
         env_file_encoding="utf-8",
     )
+
     api_v1_str: str = "/api/v1"
     project_name: str = "AuthFlow"
-    frontend_host: str = "http://localhost:8000"
+
+    frontend_host: str
     backend_cors_origins: Annotated[
         list[AnyUrl] | str,
         BeforeValidator(parse_cors),
     ] = []
-    postgres: PostgresConfig
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -62,6 +63,8 @@ class Settings(BaseSettings):
         return [str(origin).rstrip("/") for origin in self.backend_cors_origins] + [
             self.frontend_host
         ]
+
+    postgres: PostgresConfig
 
 
 settings = Settings()  # type: ignore
