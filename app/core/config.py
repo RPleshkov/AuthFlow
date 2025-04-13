@@ -43,8 +43,18 @@ class RedisConfig(BaseModel):
 
     host: str
     port: int
-    db: int
-    max_connections: int = 10
+    db: str
+    max_connections: int = 100
+    decode_responses: bool = True
+
+    @property
+    def get_uri(self):
+        return MultiHostUrl.build(
+            scheme="redis",
+            host=self.host,
+            port=self.port,
+            path=self.db,
+        )
 
 
 class Settings(BaseSettings):
@@ -77,3 +87,4 @@ class Settings(BaseSettings):
 
 
 settings = Settings()  # type: ignore
+print(settings.redis.get_uri)
