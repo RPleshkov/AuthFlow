@@ -12,7 +12,7 @@ dependencies = [
     "bcrypt>=4.3.0,<5",
     "alembic>=1.15.2,<2",
     "redis>=5.2.1,<6",
-    "sqlmodel>=0.0.24",
+    "sqlalchemy[asyncio]>=2.0.40",
 ]
 
 [dependency-groups]
