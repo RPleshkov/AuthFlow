@@ -1,9 +1,19 @@
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRoute
 
 from app.api import api_router
 from app.core.config import settings
+
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="[%(asctime)s] #%(levelname)-8s %(filename)s:"
+    "%(lineno)d - %(name)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:

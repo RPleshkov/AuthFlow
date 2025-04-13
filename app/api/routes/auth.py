@@ -1,3 +1,5 @@
+import logging
+
 from typing import TYPE_CHECKING, Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -9,6 +11,9 @@ from app.schemas.user import UserCreate, UserPublic
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
+
+
+logger = logging.getLogger(__name__)
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -27,4 +32,5 @@ async def create_user(session: SessionDep, user_in: UserCreate) -> User:
         )
 
     user = await crud.create_user(session=session, user_create=user_in)
+    logger.info("User successfully registered: %s" % user.email)
     return user
