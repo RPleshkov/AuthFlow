@@ -1,6 +1,7 @@
 import uuid
 
 from pydantic import BaseModel, EmailStr, Field
+from app.models.user import UserRole
 
 
 class UserBase(BaseModel):
@@ -12,7 +13,7 @@ class UserCreate(UserBase):
 
 
 class AdminCreate(UserCreate):
-    role: str = "admin"
+    role: UserRole = UserRole.admin
     is_verified: bool = True
 
 
