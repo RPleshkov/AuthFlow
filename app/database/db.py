@@ -1,7 +1,12 @@
 from typing import AsyncGenerator
 
-from app.core.config import settings
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
+from app.core.config import settings
+from app.database import crud
+from app.models.user import User
+from app.schemas import AdminCreate
 
 
 class DatabaseHelper:
@@ -30,6 +35,20 @@ class DatabaseHelper:
     async def get_session(self) -> AsyncGenerator[AsyncSession, None]:
         async with self.session_factory() as session:
             yield session
+
+    async def init_db(self):
+        async for session in self.get_session():
+            user = (
+                await session.execute(
+                    select(User).where(User.email == settings.first_admin)
+                )
+            ).first()
+            if not user:
+                user_in = AdminCreate(
+                    email=settings.first_admin,
+                    password=settings.first_admin_password,
+                )
+                user = crud.create_user(session=session, user_create=user_in)
 
 
 db_helper = DatabaseHelper(
