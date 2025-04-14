@@ -1,3 +1,7 @@
 .venv
 .gitignore
 .env.example
+__pycache__
+*.pyc
+.mypy_cache
+
