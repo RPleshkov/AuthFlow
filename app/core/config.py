@@ -68,6 +68,9 @@ class Settings(BaseSettings):
 
     api_v1_str: str = "/api/v1"
     project_name: str = "AuthFlow"
+    first_admin: str
+    first_admin_password: str
+    
 
     frontend_host: str
     backend_cors_origins: Annotated[

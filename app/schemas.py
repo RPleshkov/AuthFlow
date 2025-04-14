@@ -11,6 +11,11 @@ class UserCreate(UserBase):
     password: str = Field(min_length=6, max_length=40)
 
 
+class AdminCreate(UserCreate):
+    role: str = "admin"
+    is_verified: bool = True
+
+
 class UserPublic(UserBase):
     id: uuid.UUID
 
