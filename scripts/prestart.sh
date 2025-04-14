@@ -1,11 +1,13 @@
+#!/usr/bin/env bash
+
 set -e
 set -x
 
-python app/backend_pre_start.py
+python -m app.backend_pre_start
 
 alembic upgrade head
 
-python app/initial_data.py
+python -m app.initial_data
 
 mkdir -p app/core/certs
 
