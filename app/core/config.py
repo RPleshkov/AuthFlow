@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Annotated
 
 from pydantic import AnyUrl, BaseModel, BeforeValidator, computed_field
@@ -5,6 +6,21 @@ from pydantic_core import MultiHostUrl
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from app.core.utils import parse_cors
+
+
+BASE_DIR = Path(__file__).parent.parent
+
+
+class JWTConfig(BaseModel):
+    algorithm: str = "RS256"
+    access_token_expire_minutes: int = 15
+    refresh_token_expire_days: int = 30
+
+
+class SecurityConfig(BaseModel):
+    private_key: Path = BASE_DIR / "core" / "certs" / "private_key.pem"
+    public_key: Path = BASE_DIR / "core" / "certs" / "public_key.pem"
+    jwt: JWTConfig = JWTConfig()
 
 
 class PostgresConfig(BaseModel):
@@ -70,7 +86,6 @@ class Settings(BaseSettings):
     project_name: str = "AuthFlow"
     first_admin: str
     first_admin_password: str
-    
 
     frontend_host: str
     backend_cors_origins: Annotated[
@@ -87,7 +102,7 @@ class Settings(BaseSettings):
 
     postgres: PostgresConfig
     redis: RedisConfig
+    security: SecurityConfig = SecurityConfig()
 
 
 settings = Settings()  # type: ignore
-print(settings.redis.get_uri)
