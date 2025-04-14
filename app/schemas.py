@@ -13,3 +13,8 @@ class UserCreate(UserBase):
 
 class UserPublic(UserBase):
     id: uuid.UUID
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
