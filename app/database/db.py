@@ -48,7 +48,7 @@ class DatabaseHelper:
                     email=settings.first_admin,
                     password=settings.first_admin_password,
                 )
-                user = crud.create_user(session=session, user_create=user_in)
+                user = await crud.create_user(session=session, user_create=user_in)
 
 
 db_helper = DatabaseHelper(
