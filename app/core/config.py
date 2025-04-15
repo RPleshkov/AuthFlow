@@ -14,7 +14,7 @@ BASE_DIR = Path(__file__).parent.parent
 class JWTConfig(BaseModel):
     algorithm: str = "RS256"
     access_token_expire_minutes: int = 15
-    refresh_token_expire_days: int = 30
+    refresh_token_expire_days: int = 7
 
 
 class SecurityConfig(BaseModel):
