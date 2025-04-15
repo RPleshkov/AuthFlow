@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token/")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 
 SessionDep = Annotated["AsyncSession", Depends(db_helper.get_session)]
@@ -32,7 +32,7 @@ async def get_current_token_payload(token: TokenDep, redis: RedisDep):
     try:
         payload = decode_jwt(token=token)
         jti = payload["jti"]
-        if await redis.get("blacklist:%s" % jti):
+        if await redis.get(("blacklist:%s" % jti)):
             raise InvalidTokenError
 
     except InvalidTokenError:
@@ -44,9 +44,12 @@ async def get_current_token_payload(token: TokenDep, redis: RedisDep):
     return payload
 
 
+TokenPayload = Annotated[dict, Depends(get_current_token_payload)]
+
+
 async def get_current_user(
     session: SessionDep,
-    payload: Annotated[dict, Depends(get_current_token_payload)],
+    payload: TokenPayload,
 ) -> User:
     if payload.get(PAYLOAD_KEY_TOKEN_TYPE) != ACCESS_TOKEN:
         raise HTTPException(
@@ -56,9 +59,13 @@ async def get_current_user(
     email = payload[PAYLOAD_KEY_SUB]
     user = await crud.get_user_by_email(session=session, email=email)
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
     if not user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive user")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
+        )
     return user
 
 
