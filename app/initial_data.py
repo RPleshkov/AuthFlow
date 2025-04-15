@@ -3,6 +3,7 @@ import logging
 
 from app.database.db import db_helper
 
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 

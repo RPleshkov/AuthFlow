@@ -10,6 +10,7 @@ from app.database.redis_db import redis_helper
 max_tries = 60 * 5  # 5 minutes
 wait_seconds = 1
 
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -34,9 +35,9 @@ async def init() -> None:
 
 
 async def main() -> None:
-    logger.info("Initializing service")
+    logger.info("Initializing services")
     await init()
-    logger.info("Service finished initializing")
+    logger.info("Services finished initializing")
 
 
 if __name__ == "__main__":
