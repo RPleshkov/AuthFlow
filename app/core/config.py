@@ -15,6 +15,8 @@ class JWTConfig(BaseModel):
     algorithm: str = "RS256"
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 7
+    verify_token_expire_days: int = 10
+    resetpass_token_expire_minutes: int = 60
 
 
 class SecurityConfig(BaseModel):

@@ -9,9 +9,8 @@ from app.core.config import settings
 from app.core.security import (
     PAYLOAD_KEY_SUB,
     PAYLOAD_KEY_TOKEN_TYPE,
-    REFRESH_TOKEN,
-    create_access_token,
-    create_refresh_token,
+    TokenTypes,
+    create_token_by_type,
 )
 from app.database import crud
 from app.models.user import User
@@ -56,8 +55,8 @@ async def login(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
         )
-    access_token = create_access_token(user)
-    refresh_token = create_refresh_token(user)
+    access_token = create_token_by_type(TokenTypes.ACCESS)(user)
+    refresh_token = create_token_by_type(TokenTypes.REFRESH)(user)
     return Token(
         access_token=access_token,
         refresh_token=refresh_token,
@@ -95,7 +94,7 @@ async def refresh(
 ) -> Token:
 
     payload = refresh_token.copy()
-    if payload.get(PAYLOAD_KEY_TOKEN_TYPE) != REFRESH_TOKEN:
+    if payload.get(PAYLOAD_KEY_TOKEN_TYPE) != TokenTypes.REFRESH:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token type",
@@ -118,8 +117,8 @@ async def refresh(
         value="revoked",
         ex=settings.security.jwt.refresh_token_expire_days * 24 * 60 * 60,
     )
-    refresh_token = create_refresh_token(user)  # type: ignore
-    access_token = create_access_token(user)
+    access_token = create_token_by_type(TokenTypes.ACCESS)(user)
+    refresh_token = create_token_by_type(TokenTypes.REFRESH)(user)  # type: ignore
 
     return Token(
         access_token=access_token,

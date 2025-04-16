@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jwt import InvalidTokenError
 
 from app.core.security import (
-    ACCESS_TOKEN,
+    TokenTypes,
     PAYLOAD_KEY_SUB,
     PAYLOAD_KEY_TOKEN_TYPE,
     decode_jwt,
@@ -14,6 +14,7 @@ from app.database import crud
 from app.database.db import db_helper
 from app.database.redis_db import redis_helper
 from app.models.user import User
+from app.schemas import RefreshToken
 
 if TYPE_CHECKING:
     from redis.asyncio import Redis
@@ -50,10 +51,10 @@ async def get_current_token_payload(
 
 
 async def get_refresh_token_payload(
-    token: Annotated[str, Body()],
+    token: RefreshToken,
     redis: RedisDep,
 ) -> dict:
-    return await decode_jwt_or_403(token, redis)
+    return await decode_jwt_or_403(token.refresh_token, redis)
 
 
 AccessTokenPayload = Annotated[dict, Depends(get_current_token_payload)]
@@ -64,7 +65,7 @@ async def get_current_user(
     session: SessionDep,
     payload: AccessTokenPayload,
 ) -> User:
-    if payload.get(PAYLOAD_KEY_TOKEN_TYPE) != ACCESS_TOKEN:
+    if payload.get(PAYLOAD_KEY_TOKEN_TYPE) != TokenTypes.ACCESS:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token type",
