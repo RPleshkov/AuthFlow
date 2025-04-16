@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Annotated
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Body, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt import InvalidTokenError
 
@@ -28,28 +28,41 @@ RedisDep = Annotated["Redis", Depends(redis_helper.get_client)]
 TokenDep = Annotated[str, Depends(oauth2_scheme)]
 
 
-async def get_current_token_payload(token: TokenDep, redis: RedisDep):
+async def decode_jwt_or_403(token: str, redis: "Redis") -> dict:
     try:
         payload = decode_jwt(token=token)
         jti = payload["jti"]
-        if await redis.get(("blacklist:%s" % jti)):
+        if (await redis.get(("blacklist:%s" % jti))) is not None:
             raise InvalidTokenError
-
     except InvalidTokenError:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Could not validate credentials",
         )
-
     return payload
 
 
-TokenPayload = Annotated[dict, Depends(get_current_token_payload)]
+async def get_current_token_payload(
+    token: TokenDep,
+    redis: RedisDep,
+) -> dict:
+    return await decode_jwt_or_403(token, redis)
+
+
+async def get_refresh_token_payload(
+    token: Annotated[str, Body()],
+    redis: RedisDep,
+) -> dict:
+    return await decode_jwt_or_403(token, redis)
+
+
+AccessTokenPayload = Annotated[dict, Depends(get_current_token_payload)]
+RefreshTokenPayload = Annotated[dict, Depends(get_refresh_token_payload)]
 
 
 async def get_current_user(
     session: SessionDep,
-    payload: TokenPayload,
+    payload: AccessTokenPayload,
 ) -> User:
     if payload.get(PAYLOAD_KEY_TOKEN_TYPE) != ACCESS_TOKEN:
         raise HTTPException(
