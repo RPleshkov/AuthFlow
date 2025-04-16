@@ -4,9 +4,15 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 
-from app.api.deps import RedisDep, SessionDep, TokenPayload
+from app.api.deps import RedisDep, SessionDep, AccessTokenPayload, RefreshTokenPayload
 from app.core.config import settings
-from app.core.security import create_access_token, create_refresh_token
+from app.core.security import (
+    PAYLOAD_KEY_SUB,
+    PAYLOAD_KEY_TOKEN_TYPE,
+    REFRESH_TOKEN,
+    create_access_token,
+    create_refresh_token,
+)
 from app.database import crud
 from app.models.user import User
 from app.schemas import Token, UserCreate, UserPublic
@@ -36,7 +42,6 @@ async def create_user(session: SessionDep, user_in: UserCreate) -> User:
 @router.post("/login")
 async def login(
     session: SessionDep,
-    redis: RedisDep,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 ) -> Token:
     user = await crud.authenticate(
@@ -60,10 +65,63 @@ async def login(
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-async def logout(payload: TokenPayload, redis: RedisDep):
-    jti = payload["jti"]
+async def logout(
+    access_token: AccessTokenPayload,
+    refresh_token: RefreshTokenPayload,
+    redis: RedisDep,
+):
+
+    access_jti = access_token["jti"]
+    refresh_jti = refresh_token["jti"]
+
     await redis.set(
-        name=("blacklist:%s" % jti),
+        name=("blacklist:%s" % access_jti),
         value="revoked",
         ex=settings.security.jwt.access_token_expire_minutes * 60,
+    )
+    await redis.set(
+        name=("blacklist:%s" % refresh_jti),
+        value="revoked",
+        ex=settings.security.jwt.refresh_token_expire_days * 24 * 60 * 60,
+    )
+    return None
+
+
+@router.post("/refresh")
+async def refresh(
+    refresh_token: RefreshTokenPayload,
+    session: SessionDep,
+    redis: RedisDep,
+) -> Token:
+
+    payload = refresh_token.copy()
+    if payload.get(PAYLOAD_KEY_TOKEN_TYPE) != REFRESH_TOKEN:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token type",
+        )
+
+    user = await crud.get_user_by_email(
+        session=session,
+        email=payload[PAYLOAD_KEY_SUB],
+    )
+
+    if not user or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid user",
+        )
+
+    refresh_jti = refresh_token["jti"]
+    await redis.set(
+        name=("blacklist:%s" % refresh_jti),
+        value="revoked",
+        ex=settings.security.jwt.refresh_token_expire_days * 24 * 60 * 60,
+    )
+    refresh_token = create_refresh_token(user)  # type: ignore
+    access_token = create_access_token(user)
+
+    return Token(
+        access_token=access_token,
+        refresh_token=refresh_token,  # type: ignore
     )
