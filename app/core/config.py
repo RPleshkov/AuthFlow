@@ -23,6 +23,13 @@ class SecurityConfig(BaseModel):
     jwt: JWTConfig = JWTConfig()
 
 
+class SMTPConfig(BaseModel):
+    host: str
+    port: int
+    username: str
+    password: str
+
+
 class PostgresConfig(BaseModel):
 
     server: str
@@ -103,6 +110,7 @@ class Settings(BaseSettings):
     postgres: PostgresConfig
     redis: RedisConfig
     security: SecurityConfig = SecurityConfig()
+    smtp: SMTPConfig
 
 
 settings = Settings()  # type: ignore
