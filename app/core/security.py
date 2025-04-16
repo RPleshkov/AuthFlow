@@ -1,5 +1,7 @@
 import uuid
 from datetime import datetime, timedelta, timezone
+from enum import Enum
+from typing import Literal
 
 import bcrypt
 import jwt
@@ -27,11 +29,17 @@ def validate_password(password: str, hashed_password: bytes) -> bool:
 
 """Функции для работы с JWT"""
 
+
+class TokenTypes(str, Enum):
+    ACCESS = "access"
+    REFRESH = "refresh"
+    VERIFY = "verify"
+    RESETPASS = "ressetpass"
+
+
 PAYLOAD_KEY_TOKEN_TYPE = "type"
 PAYLOAD_KEY_USER_ID = "user_id"
 PAYLOAD_KEY_SUB = "sub"
-ACCESS_TOKEN = "access"
-REFRESH_TOKEN = "refresh"
 
 
 def encode_jwt(
@@ -71,22 +79,34 @@ def decode_jwt(
     return decoded_jwt
 
 
-def create_access_token(user: User):
-    payload = {
-        PAYLOAD_KEY_TOKEN_TYPE: ACCESS_TOKEN,
-        PAYLOAD_KEY_USER_ID: str(user.id),
-        PAYLOAD_KEY_SUB: user.email,
-    }
-    return encode_jwt(payload=payload)
+def create_token_by_type(
+    token_type: Literal[
+        TokenTypes.ACCESS,
+        TokenTypes.REFRESH,
+        TokenTypes.VERIFY,
+        TokenTypes.RESETPASS,
+    ],
+):
+    def create_token(user: User):
+        payload = {
+            PAYLOAD_KEY_TOKEN_TYPE: token_type,
+            PAYLOAD_KEY_USER_ID: str(user.id),
+            PAYLOAD_KEY_SUB: user.email,
+        }
+        expire_map = {
+            TokenTypes.ACCESS: None,
+            TokenTypes.REFRESH: timedelta(
+                days=settings.security.jwt.refresh_token_expire_days
+            ),
+            TokenTypes.VERIFY: timedelta(
+                days=settings.security.jwt.verify_token_expire_days
+            ),
+            TokenTypes.RESETPASS: timedelta(
+                minutes=settings.security.jwt.resetpass_token_expire_minutes
+            ),
+        }
 
+        expires_delta = expire_map.get(token_type)
+        return encode_jwt(payload=payload, expires_delta=expires_delta)
 
-def create_refresh_token(user: User):
-    payload = {
-        PAYLOAD_KEY_TOKEN_TYPE: REFRESH_TOKEN,
-        PAYLOAD_KEY_USER_ID: str(user.id),
-        PAYLOAD_KEY_SUB: user.email,
-    }
-    return encode_jwt(
-        payload=payload,
-        expires_delta=timedelta(days=settings.security.jwt.refresh_token_expire_days),
-    )
+    return create_token
