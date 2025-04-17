@@ -31,7 +31,7 @@ async def authenticate(session: AsyncSession, email: str, password: str) -> User
     return user
 
 
-async def confirm_user(session: AsyncSession, email: str) -> None:
+async def verify_user(session: AsyncSession, email: str) -> None:
     stmt = (
         update(User)
         .where(User.email == email)
