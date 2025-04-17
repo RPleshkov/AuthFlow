@@ -4,7 +4,14 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 
-from app.api.deps import RedisDep, SessionDep, AccessTokenPayload, RefreshTokenPayload
+from app.api.deps import (
+    CurrentUser,
+    RedisDep,
+    SessionDep,
+    AccessTokenPayload,
+    RefreshTokenPayload,
+    decode_jwt_or_403,
+)
 from app.core.config import settings
 from app.core.security import (
     PAYLOAD_KEY_SUB,
@@ -15,6 +22,7 @@ from app.core.security import (
 from app.database import crud
 from app.models.user import User
 from app.schemas import Token, UserCreate, UserPublic
+from app.utils.email_helpers import send_verify_token
 
 logger = logging.getLogger(__name__)
 
@@ -124,3 +132,33 @@ async def refresh(
         access_token=access_token,
         refresh_token=refresh_token,  # type: ignore
     )
+
+
+@router.post("/request-verify-token", status_code=status.HTTP_202_ACCEPTED)
+async def request_verify_token(user: CurrentUser):
+    await send_verify_token(
+        to_email=user.email,
+        token=create_token_by_type(TokenTypes.VERIFY)(user),
+    )
+
+
+@router.get("/verify", status_code=status.HTTP_200_OK)
+async def verify(token: str, redis: RedisDep, session: SessionDep):
+    payload = await decode_jwt_or_403(token, redis)
+    email = payload[PAYLOAD_KEY_SUB]
+    user = await crud.get_user_by_email(session=session, email=email)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
+        )
+    if user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Verify user already verified",
+        )
+    await crud.verify_user(session, email)
+    logger.info("User verify email: %s" % user.email)
