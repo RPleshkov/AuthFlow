@@ -8,7 +8,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from app.core.utils import parse_cors
 
 
-BASE_DIR = Path(__file__).parent.parent
+BASE_DIR = Path(__file__).parent.parent.parent
 
 
 class JWTConfig(BaseModel):
@@ -20,8 +20,8 @@ class JWTConfig(BaseModel):
 
 
 class SecurityConfig(BaseModel):
-    private_key: Path = BASE_DIR / "core" / "certs" / "private_key.pem"
-    public_key: Path = BASE_DIR / "core" / "certs" / "public_key.pem"
+    private_key: Path = BASE_DIR / "app" / "core" / "certs" / "private_key.pem"
+    public_key: Path = BASE_DIR / "app" / "core" / "certs" / "public_key.pem"
     jwt: JWTConfig = JWTConfig()
 
 
@@ -84,7 +84,7 @@ class RedisConfig(BaseModel):
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file="../.env",
+        env_file=BASE_DIR / ".env",
         env_prefix="ENV_",
         env_nested_delimiter="__",
         case_sensitive=False,
