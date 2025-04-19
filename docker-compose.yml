@@ -1,0 +1,55 @@
+services:
+  authflow:
+    image: authflow
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    networks:
+      - my_network
+    depends_on:
+      - postgres
+      - redis
+      - pgadmin
+
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: database
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - "./postgres:/var/lib/postgresql/data"
+    networks:
+      - my_network
+
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.org
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    volumes:
+      - "./pgadmin:/var/lib/pgadmin"
+    depends_on:
+      - postgres
+    networks:
+      - my_network
+
+  redis:
+    image: redis:alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - "./redis-data:/data"
+    networks:
+      - my_network
+
+networks:
+  my_network:
+    driver: bridge
