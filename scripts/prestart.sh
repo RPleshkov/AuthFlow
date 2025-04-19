@@ -3,12 +3,6 @@
 set -e
 set -x
 
-python -m app.backend_pre_start
-
-alembic upgrade head
-
-python -m app.initial_data
-
 mkdir -p app/core/certs
 
 PRIVATE_KEY="app/core/certs/private_key.pem"
@@ -28,5 +22,11 @@ if [ ! -f "$PUBLIC_KEY" ]; then
 else
     echo "Public key already exists."
 fi
+
+python -m app.backend_pre_start
+
+alembic upgrade head
+
+python -m app.initial_data
 
 exec "$@"
